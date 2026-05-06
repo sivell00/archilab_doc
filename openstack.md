@@ -88,3 +88,11 @@ sshpass -p "password" ssh-copy-id -o StrictHostKeyChecking=no sds@ip_7_1
 kk create cluster -f ops-config.yaml
 kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l 'app in (ks-install, ks-installer)' -o jsonpath='{.items[0].metadata.name}') -f
 ```
+
+## 1.7. kvs 대시보드 접속
+http://<마스터 노드 IP>:30880
+
+기본 로그인 정보:
+    ID: admin
+    PW: P@88w0rd (첫 로그인 후 변경 필요)
+	    -> Passw0rd
