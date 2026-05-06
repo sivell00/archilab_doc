@@ -525,7 +525,7 @@ metadata:
   name: public-openstack
   namespace: openstack
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "ip"
+    metallb.universe.tf/loadBalancerIPs: "192.168.10.109"
 spec:
   externalTrafficPolicy: Cluster
   type: LoadBalancer
@@ -544,8 +544,10 @@ service/public-openstack created
 ### 2.4.2. 확인
 ```
 root@control01:~/osh/openstack-helm# kubectl get service -n openstack
-NAME               TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
-public-openstack   LoadBalancer   10.233.42.172   <pending>     80:32220/TCP,443:31264/TCP   53s
+NAME               TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                      AGE
+public-openstack   LoadBalancer   10.233.42.172   192.168.10.109   80:32220/TCP,443:31264/TCP   2m25s
+
+
 
 ```
 
