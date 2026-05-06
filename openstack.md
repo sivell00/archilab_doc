@@ -452,6 +452,102 @@ Now you can configure it via its CRs. Please refer to the metallb official docs
 on how to use the CRs.
 ```
 
+### 2.3.1. ip address pool 설정
+```
+root@control01:~/osh/openstack-helm# tee > /tmp/metallb_ipaddresspool.yaml <<EOF
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+    name: public
+    namespace: metallb-system
+spec:
+    addresses:
+    - "192.168.10.109/32"
+EOF
+
+root@control01:~/osh/openstack-helm# kubectl apply -f /tmp/metallb_ipaddresspool.yaml
+ipaddresspool.metallb.io/public created
+```
+
+### 2.3.2. L2 advertise
+```
+root@control01:~/osh/openstack-helm# tee > /tmp/metallb_l2advertisement.yaml <<EOF
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+    name: public
+    namespace: metallb-system
+spec:
+    ipAddressPools:
+    - public
+EOF
+root@control01:~/osh/openstack-helm# kubectl apply -f /tmp/metallb_l2advertisement.yaml
+l2advertisement.metallb.io/public created
+```
+
+### 2.3.3. 확인
+```
+root@control01:~/osh/openstack-helm# kubectl get ipaddresspool -n metallb-system public -o yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"metallb.io/v1beta1","kind":"IPAddressPool","metadata":{"annotations":{},"name":"public","namespace":"metallb-system"},"spec":{"addresses":["192.168.10.109/32"]}}
+  creationTimestamp: "2026-05-06T06:42:51Z"
+  generation: 1
+  name: public
+  namespace: metallb-system
+  resourceVersion: "2285731"
+  uid: 61b7f581-8fb7-4410-be12-00e461be8304
+spec:
+  addresses:
+  - 192.168.10.109/32
+  autoAssign: true
+  avoidBuggyIPs: false
+status:
+  assignedIPv4: 0
+  assignedIPv6: 0
+  availableIPv4: 1
+  availableIPv6: 0
+```
+
+## 2.4. Openstack Endpoint 설정
+### 2.4.1. 설정
+```
+root@control01:~/osh/openstack-helm# tee > /tmp/openstack_endpoint_service.yaml <<EOF
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: public-openstack
+  namespace: openstack
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "ip"
+spec:
+  externalTrafficPolicy: Cluster
+  type: LoadBalancer
+  selector:
+    app: ingress-api
+  ports:
+    - name: http
+      port: 80
+    - name: https
+      port: 443
+EOF
+root@control01:~/osh/openstack-helm# kubectl apply -f /tmp/openstack_endpoint_service.yaml
+service/public-openstack created
+```
+
+### 2.4.2. 확인
+```
+root@control01:~/osh/openstack-helm# kubectl get service -n openstack
+NAME               TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+public-openstack   LoadBalancer   10.233.42.172   <pending>     80:32220/TCP,443:31264/TCP   53s
+
+```
 
 
 
