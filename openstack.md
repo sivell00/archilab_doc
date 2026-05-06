@@ -91,8 +91,9 @@ kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l 'app
 
 ## 1.7. kvs 대시보드 접속
 http://<마스터 노드 IP>:30880
-
+```
 기본 로그인 정보:
     ID: admin
     PW: P@88w0rd (첫 로그인 후 변경 필요)
 	    -> Passw0rd
+```
