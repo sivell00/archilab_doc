@@ -26,3 +26,45 @@ timedatectl set-timezone Asia/Seoul
 chronyc activity -v
 date
 ```
+
+# 3. Kubekey 다운로드 및 실행
+```
+curl -sfL https://get-kk.kubesphere.io | VERSION=v3.1.7 sh -
+cp -rfv ./kk /usr/local/bin/kk
+chmod +x /usr/local/bin/kk
+kk version --show-supported-k8s
+kk create config --with-kubernetes v1.31.2 --with-kubesphere v3.4.1
+```
+
+# 4. kubekey 설치를 위한 yaml 파일
+```
+cp config-sample.yaml ops-config.yaml
+```
+
+```
+apiVersion: kubekey.kubesphere.io/v1alpha2
+kind: Cluster
+metadata:
+  name: kvs
+spec:
+  hosts:
+  - {name: hostname_1, address: ip_1_1, internalAddress: ip_2_1, user: sds, password: "password"}
+  - {name: hostname_2, address: ip_2_1, internalAddress: ip_2_2, user: sds, password: "password"}
+  - {name: hostname_3, address: ip_3_1, internalAddress: ip_2_3, user: sds, password: "password"}
+  - {name: hostname_4, address: ip_4_1, internalAddress: ip_2_4, user: sds, password: "password"}
+  - {name: hostname_5, address: ip_5_1, internalAddress: ip_2_5, user: sds, password: "password"}
+  - {name: hostname_6, address: ip_6_1, internalAddress: ip_2_6, user: sds, password: "password"}
+  - {name: hostname_7, address: ip_7_1, internalAddress: ip_2_7, user: sds, password: "password"}
+  roleGroups:
+    etcd:
+    - hostname_1
+    control-plane:
+    - hostname_1
+    worker:
+    - hostname_2
+    - hostname_3
+    - hostname_4
+    - hostname_5
+    - hostname_6
+    - hostname_7
+```
