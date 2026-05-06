@@ -97,3 +97,203 @@ http://<마스터 노드 IP>:30880
     PW: P@88w0rd (첫 로그인 후 변경 필요)
 	    -> Passw0rd
 ```
+
+## 1.8. Calico
+```
+root@control01:~/k8s# curl -L https://github.com/projectcalico/calico/releases/download/v3.28.1/calicoctl-linux-amd64 -o calicoctl
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 64.4M  100 64.4M    0     0  32.5M      0  0:00:01  0:00:01 --:--:-- 47.6M
+root@control01:~/k8s# chmod +x calicoctl
+root@control01:~/k8s# ./calicoctl node status
+Calico process is running.
+
+IPv4 BGP status
++----------------+-------------------+-------+------------+-------------+
+|  PEER ADDRESS  |     PEER TYPE     | STATE |   SINCE    |    INFO     |
++----------------+-------------------+-------+------------+-------------+
+| 192.168.11.102 | node-to-node mesh | up    | 2026-04-29 | Established |
+| 192.168.11.104 | node-to-node mesh | up    | 2026-04-29 | Established |
+| 192.168.11.105 | node-to-node mesh | up    | 2026-04-29 | Established |
+| 192.168.11.106 | node-to-node mesh | up    | 2026-04-29 | Established |
+| 192.168.11.107 | node-to-node mesh | up    | 2026-04-29 | Established |
+| 192.168.11.103 | node-to-node mesh | up    | 2026-04-29 | Established |
+| 192.168.11.108 | node-to-node mesh | up    | 2026-04-29 | Established |
++----------------+-------------------+-------+------------+-------------+
+
+IPv6 BGP status
+No IPv6 peers found.
+
+```
+
+## 1.9. Kubectl auto completion
+```
+root@control01:~/k8s# apt-get install bash-completion
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+bash-completion is already the newest version (1:2.11-8).
+bash-completion set to manually installed.
+0 upgraded, 0 newly installed, 0 to remove and 36 not upgraded.
+root@control01:~/k8s# kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
+root@control01:~/k8s# sed -i '$a complete -o default -F __start_kubectl kubectl' ~/.bashrc
+```
+
+## 1.10. krew
+```
+root@control01:~/k8s# set -x; cd "$(mktemp -d)" &&
+  OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
+  ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
+  KREW="krew-${OS}_${ARCH}" &&
+  curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" &&
+  tar zxvf "${KREW}.tar.gz" &&
+  ./"${KREW}" install krew
+++ mktemp -d
++ cd /tmp/tmp.9q4RYESuJa
+++ uname
+++ tr '[:upper:]' '[:lower:]'
++ OS=linux
+++ uname -m
+++ sed -e s/x86_64/amd64/ -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/'
++ ARCH=amd64
++ KREW=krew-linux_amd64
++ curl -fsSLO https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz
++ tar zxvf krew-linux_amd64.tar.gz
+./LICENSE
+./krew-linux_amd64
++ ./krew-linux_amd64 install krew
+Adding "default" plugin index from https://github.com/kubernetes-sigs/krew-index.git.
+Updated the local copy of plugin index.
+Installing plugin: krew
+Installed plugin: krew
+\
+ | Use this plugin:
+ |      kubectl krew
+ | Documentation:
+ |      https://krew.sigs.k8s.io/
+ | Caveats:
+ | \
+ |  | krew is now installed! To start using kubectl plugins, you need to add
+ |  | krew's installation directory to your PATH:
+ |  |
+ |  |   * macOS/Linux:
+ |  |     - Add the following to your ~/.bashrc or ~/.zshrc:
+ |  |         export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+ |  |     - Restart your shell.
+ |  |
+ |  |   * Windows: Add %USERPROFILE%\.krew\bin to your PATH environment variable
+ |  |
+ |  | To list krew commands and to get help, run:
+ |  |   $ kubectl krew
+ |  | For a full list of available plugins, run:
+ |  |   $ kubectl krew search
+ |  |
+ |  | You can find documentation at
+ |  |   https://krew.sigs.k8s.io/docs/user-guide/quickstart/.
+ | /
+/
+```
+
+## 1.11. ceph 설치
+control 02에서 ceph를 설치하도록 한다.
+
+가장 먼저 disk를 확인하자.
+```
+root@control01:~/k8s# lsblk -l
++ lsblk -l
+NAME MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+sda    8:0    0  1.7T  0 disk
+sdb    8:16   0  1.7T  0 disk
+sdc    8:32   0  1.7T  0 disk
+sdd    8:48   0  1.7T  0 disk
+sde    8:64   0  1.7T  0 disk
+sdf    8:80   0  1.7T  0 disk
+sdg    8:96   0  1.7T  0 disk
+sdg1   8:97   0    1G  0 part /boot/efi
+sdg2   8:98   0  1.7T  0 part /
+```
+
+disk 초기화
+```
+root@control02:~# sgdisk --zap-all /dev/sda
+Creating new GPT entries in memory.
+GPT data structures destroyed! You may now partition the disk using fdisk or
+other utilities.
+root@control02:~# dd if=/dev/zero of="/dev/sda" bs=1M count=100 oflag=direct,dsync
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB, 100 MiB) copied, 0.231301 s, 453 MB/s
+root@control02:~# blkdiscard /dev/sda
+root@control02:~# partprobe /dev/sda
+root@control02:~# sgdisk --zap-all /dev/sdb
+Creating new GPT entries in memory.
+GPT data structures destroyed! You may now partition the disk using fdisk or
+other utilities.
+root@control02:~# dd if=/dev/zero of="/dev/sdb" bs=1M count=100 oflag=direct,dsync
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB, 100 MiB) copied, 0.380212 s, 276 MB/s
+root@control02:~# blkdiscard /dev/sdb
+root@control02:~# partprobe /dev/sdb
+root@control02:~# sgdisk --zap-all /dev/sdc
+Creating new GPT entries in memory.
+GPT data structures destroyed! You may now partition the disk using fdisk or
+other utilities.
+root@control02:~# dd if=/dev/zero of="/dev/sdc" bs=1M count=100 oflag=direct,dsync
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB, 100 MiB) copied, 0.392358 s, 267 MB/s
+root@control02:~# blkdiscard /dev/sdc
+root@control02:~# partprobe /dev/sdc
+root@control02:~# sgdisk --zap-all /dev/sdd
+Creating new GPT entries in memory.
+GPT data structures destroyed! You may now partition the disk using fdisk or
+other utilities.
+root@control02:~# dd if=/dev/zero of="/dev/sdd" bs=1M count=100 oflag=direct,dsync
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB, 100 MiB) copied, 0.255054 s, 411 MB/s
+root@control02:~# blkdiscard /dev/sdd
+root@control02:~# partprobe /dev/sdd
+root@control02:~# sgdisk --zap-all /dev/sde
+Creating new GPT entries in memory.
+GPT data structures destroyed! You may now partition the disk using fdisk or
+other utilities.
+root@control02:~# dd if=/dev/zero of="/dev/sde" bs=1M count=100 oflag=direct,dsync
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB, 100 MiB) copied, 0.273213 s, 384 MB/s
+root@control02:~# blkdiscard /dev/sde
+root@control02:~# partprobe /dev/sde
+root@control02:~# sgdisk --zap-all /dev/sdf
+Creating new GPT entries in memory.
+GPT data structures destroyed! You may now partition the disk using fdisk or
+other utilities.
+root@control02:~# dd if=/dev/zero of="/dev/sdf" bs=1M count=100 oflag=direct,dsync
+100+0 records in
+100+0 records out
+104857600 bytes (105 MB, 100 MiB) copied, 0.87628 s, 120 MB/s
+root@control02:~# blkdiscard /dev/sdf
+root@control02:~# partprobe /dev/sdf
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
