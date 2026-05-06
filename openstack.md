@@ -195,7 +195,7 @@ Installed plugin: krew
 /
 ```
 
-## 1.11. ceph 설치
+## 1.11. ceph 설치 - 사전 작업
 control 02에서 ceph를 설치하도록 한다.
 
 가장 먼저 disk를 확인하자.
@@ -276,6 +276,92 @@ root@control02:~# dd if=/dev/zero of="/dev/sdf" bs=1M count=100 oflag=direct,dsy
 104857600 bytes (105 MB, 100 MiB) copied, 0.87628 s, 120 MB/s
 root@control02:~# blkdiscard /dev/sdf
 root@control02:~# partprobe /dev/sdf
+```
+
+# 2. Openstack
+## 2.1. 헬름 차트
+```
+root@control01:~# mkdir osh
++ mkdir osh
+root@control01:~# cd osh
++ cd osh
+root@control01:~/osh# git clone https://opendev.org/openstack/openstack-helm.git
++ git clone https://opendev.org/openstack/openstack-helm.git
+Cloning into 'openstack-helm'...
+remote: Enumerating objects: 90062, done.
+remote: Counting objects: 100% (37525/37525), done.
+remote: Compressing objects: 100% (7087/7087), done.
+remote: Total 90062 (delta 35997), reused 30438 (delta 30438), pack-reused 52537 (from 1)
+Receiving objects: 100% (90062/90062), 16.32 MiB | 6.47 MiB/s, done.
+Resolving deltas: 100% (66451/66451), done.
+root@control01:~/osh# helm plugin install https://opendev.org/openstack/openstack-helm-plugin.git
++ helm plugin install https://opendev.org/openstack/openstack-helm-plugin.git
+Installed plugin: osh
+root@control01:~/osh/openstack-helm# export OPENSTACK_RELEASE=2025.1
++ export OPENSTACK_RELEASE=2025.1
++ OPENSTACK_RELEASE=2025.1
+root@control01:~/osh/openstack-helm# export FEATURES="${OPENSTACK_RELEASE} ubuntu_noble"
++ export 'FEATURES=2025.1 ubuntu_noble'
++ FEATURES='2025.1 ubuntu_noble'
+root@control01:~/osh/openstack-helm# export OVERRIDES_DIR=$(pwd)/values_overrides
+++ pwd
++ export OVERRIDES_DIR=/root/osh/openstack-helm/values_overrides
++ OVERRIDES_DIR=/root/osh/openstack-helm/values_overrides
+```
+
+```
+root@control01:~/osh/openstack-helm# helm dependency build  rabbitmq
++ helm dependency build rabbitmq
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  mariadb
++ helm dependency build mariadb
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  memcached
++ helm dependency build memcached
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  keystone
++ helm dependency build keystone
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  heat
++ helm dependency build heat
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  glance
++ helm dependency build glance
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  cinder
++ helm dependency build cinder
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  openvswitch
++ helm dependency build openvswitch
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  libvirt
++ helm dependency build libvirt
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  nova
++ helm dependency build nova
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  ovn
++ helm dependency build ovn
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  neutron
++ helm dependency build neutron
+Saving 1 charts
+Deleting outdated charts
+root@control01:~/osh/openstack-helm# helm dependency build  horizon
++ helm dependency build horizon
+Saving 1 charts
+Deleting outdated charts
 ```
 
 
