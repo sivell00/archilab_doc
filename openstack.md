@@ -1439,9 +1439,107 @@ rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-s86p2      
 rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-v2gs6              2/2     Running     0          10m
 ```
 
+2.7. ceph 확인
+2.7.1. 확인 1
+```
+root@control01:~/osh/openstack-helm# sed -n '235,245p' tools/deployment/ceph/ceph-rook.sh
+    mon: system-node-critical
+    osd: system-node-critical
+    mgr: system-cluster-critical
+  storage: # cluster level storage configuration and selection
+    useAllNodes: true
+    useAllDevices: false
+    deviceFilter: "^sd[a-f]"
+  disruptionManagement:
+    managePodBudgets: true
+    osdMaintenanceTimeout: 30
+    pgHealthCheckTimeout: 0
+root@control01:~/osh/openstack-helm# kubectl -n openstack get sc general -oyaml
+allowVolumeExpansion: true
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    meta.helm.sh/release-name: rook-ceph-cluster
+    meta.helm.sh/release-namespace: ceph
+    storageclass.kubernetes.io/is-default-class: "true"
+    storageclass.kubesphere.io/allow-clone: "true"
+    storageclass.kubesphere.io/allow-snapshot: "true"
+  creationTimestamp: "2026-05-07T01:53:28Z"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: general
+  resourceVersion: "2560346"
+  uid: e62d295f-1e72-40a8-af8a-86e37b579c0f
+parameters:
+  clusterID: ceph
+  csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+  csi.storage.k8s.io/controller-expand-secret-namespace: ceph
+  csi.storage.k8s.io/fstype: ext4
+  csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+  csi.storage.k8s.io/node-stage-secret-namespace: ceph
+  csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+  csi.storage.k8s.io/provisioner-secret-namespace: ceph
+  imageFeatures: layering
+  imageFormat: "2"
+  pool: rbd
+provisioner: rook-ceph.rbd.csi.ceph.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+```
+2.7.2. 확인 2
+```
+root@control01:~/osh/openstack-helm# kubectl get pod -n ceph
+NAME                                      READY   STATUS      RESTARTS   AGE
+rook-ceph-mgr-a-66bbc6dc4b-5rv24          3/3     Running     0          3h51m
+rook-ceph-mgr-b-94bd58b6f-lqfwq           3/3     Running     0          3h51m
+rook-ceph-mgr-c-9bddbd7b4-qrbz6           3/3     Running     0          3h51m
+rook-ceph-mon-a-f5c4df79d-tbb8r           2/2     Running     0          3h51m
+rook-ceph-mon-b-795ffcd64d-jvx55          2/2     Running     0          3h51m
+rook-ceph-mon-c-7d65b7f68c-nrt9t          2/2     Running     0          3h51m
+rook-ceph-osd-0-b8ff77fcd-xf5sk           2/2     Running     0          3h49m
+rook-ceph-osd-1-6555ccdbc9-55xws          2/2     Running     0          3h49m
+rook-ceph-osd-2-5798984758-xr4vg          2/2     Running     0          3h49m
+rook-ceph-osd-3-575ff49f7d-h9km7          2/2     Running     0          3h49m
+rook-ceph-osd-4-7c65755ccd-66fcm          2/2     Running     0          3h49m
+rook-ceph-osd-5-7d8786698-w6ll9           2/2     Running     0          3h49m
+rook-ceph-osd-6-85bfb9cd4c-bvmtb          2/2     Running     0          3h49m
+rook-ceph-osd-7-5d78b94bb4-6dbz9          2/2     Running     0          3h49m
+rook-ceph-osd-prepare-control02-t8nbh     0/1     Completed   0          3h50m
+rook-ceph-osd-prepare-control03-wvldw     0/1     Completed   0          3h50m
+rook-ceph-osd-prepare-cpu01-vlxdc         0/1     Completed   0          3h50m
+rook-ceph-osd-prepare-cpu02-w2r8s         0/1     Completed   0          3h50m
+rook-ceph-osd-prepare-cpu03-gngwt         0/1     Completed   0          3h50m
+rook-ceph-osd-prepare-gpu01-vvs46         0/1     Completed   0          3h50m
+rook-ceph-osd-prepare-gpu02-brm8v         0/1     Completed   0          3h50m
+rook-ceph-rgw-default-a-597466649-8wr6w   2/2     Running     0          3h48m
+rook-ceph-tools-665997cbf8-v48gx          1/1     Running     0          3h55m
+```
 
+2.7.3. 확인 3
+여기에서 cluster id가 중요하다고 함.
+```
+root@control01:~/osh/openstack-helm# kubectl exec -it -n ceph rook-ceph-tools-665997cbf8-v48gx  -- /bin/bash
+bash-5.1$ ceph status
+  cluster:
+    id:     bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    health: HEALTH_OK
 
+  services:
+    mon: 3 daemons, quorum a,b,c (age 3h) [leader: a]
+    mgr: a(active, since 3h), standbys: b, c
+    osd: 8 osds: 8 up (since 3h), 8 in (since 3h)
+    rgw: 1 daemon active (1 hosts, 1 zones)
 
+  data:
+    pools:   10 pools, 121 pgs
+    objects: 404 objects, 610 KiB
+    usage:   218 MiB used, 14 TiB / 14 TiB avail
+    pgs:     121 active+clean
+
+  io:
+    client:   85 B/s rd, 170 B/s wr, 0 op/s rd, 0 op/s wr
+```
 
 
 
