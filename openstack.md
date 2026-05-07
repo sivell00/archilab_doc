@@ -1678,6 +1678,40 @@ kubectl taint nodes control01 node-role.kubernetes.io/control-plane-
 확인 방법 : helm get values ceph-adapter-rook -n openstack
 
 
+오버라이드 밸류를 걍 default value에 입력했음...
+확인은 다음과 같이...
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get cm -n openstack
+NAME                       DATA   AGE
+ceph-adapter-rook-bin      2      27m
+ceph-etc                   1      27m
+ingress-nginx-controller   1      25h
+kube-root-ca.crt           1      25h
+rabbitmq-rabbitmq-bin      7      4m2s
+rabbitmq-rabbitmq-etc      3      4m2s
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get cm -n openstack ceph-etc -oyaml
+apiVersion: v1
+data:
+  ceph.conf: |
+    [global]
+    fsid = bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    mon_host = 192.168.10.102:6789
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"ceph.conf":"[global]\nfsid = bdb3b486-d761-48b6-b3b8-02f9710c1e3a\nmon_host = 192.168.11.107:6789,192.168.11.105:6789,192.168.11.108:6789\n"},"kind":"ConfigMap","metadata":{"annotations":{"meta.helm.sh/release-name":"ceph-adapter-rook","meta.helm.sh/release-namespace":"openstack"},"creationTimestamp":"2026-05-07T06:57:55Z","labels":{"app.kubernetes.io/managed-by":"Helm"},"name":"ceph-etc","namespace":"openstack","resourceVersion":"2646508","uid":"d7acb29c-84c0-455a-95d7-a233c29831b4"}}
+    meta.helm.sh/release-name: ceph-adapter-rook
+    meta.helm.sh/release-namespace: openstack
+  creationTimestamp: "2026-05-07T06:57:55Z"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: ceph-etc
+  namespace: openstack
+  resourceVersion: "2652205"
+  uid: d7acb29c-84c0-455a-95d7-a233c29831b4
+
+-----------------------------------------------------
+
 
 # fs id만 세팅하고 스크립트 실행
 helm upgrade --install ceph-adapter-rook openstack-helm/ceph-adapter-rook --namespace=openstack $(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c ceph-adapter-rook ${FEATURES})
