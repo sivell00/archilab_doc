@@ -546,16 +546,898 @@ service/public-openstack created
 root@control01:~/osh/openstack-helm# kubectl get service -n openstack
 NAME               TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                      AGE
 public-openstack   LoadBalancer   10.233.42.172   192.168.10.109   80:32220/TCP,443:31264/TCP   2m25s
+```
 
+## 2.5. Node Label 설정
+openstack control palne : control01
+openstack network infra : control03
+ceph : control02
+cpu compute : cpu01, cpu02, cpu03
+gpu compyte : gpu01, gpu02
+```
+root@control01:~# kubectl get nodes
+NAME        STATUS   ROLES           AGE     VERSION
+control01   Ready    control-plane   7d16h   v1.31.2
+control02   Ready    worker          7d16h   v1.31.2
+control03   Ready    worker          7d16h   v1.31.2
+cpu01       Ready    worker          7d16h   v1.31.2
+cpu02       Ready    worker          7d16h   v1.31.2
+cpu03       Ready    worker          7d16h   v1.31.2
+gpu01       Ready    worker          7d16h   v1.31.2
+gpu02       Ready    worker          7d16h   v1.31.2
+root@control01:~# kubectl label --overwrite nodes control01 openstack-control-plane=enabled
+node/control01 labeled
+root@control01:~# kubectl label --overwrite nodes control03 openstack-network-node=enabled
+node/control03 labeled
+root@control01:~# kubectl label --overwrite nodes cpu01 cpu02   cpu03 gpu01 gpu02 linuxbridge=enabled
+node/cpu01 labeled
+node/cpu02 labeled
+node/cpu03 labeled
+node/gpu01 labeled
+node/gpu02 labeled
+root@control01:~# kubectl label --overwrite nodes cpu01 cpu02   cpu03 gpu01 gpu02 openvswitch=enabled
+node/cpu01 labeled
+node/cpu02 labeled
+node/cpu03 labeled
+node/gpu01 labeled
+node/gpu02 labeled
+root@control01:~# kubectl label --overwrite nodes cpu01 cpu02   cpu03 gpu01 gpu02 openstack-compute-node=enabled
+node/cpu01 labeled
+node/cpu02 labeled
+node/cpu03 labeled
+node/gpu01 labeled
+node/gpu02 labeled
+root@control01:~# kubectl label --overwrite nodes control03 l3-agent=enabled
+node/control03 labeled
+root@control01:~# kubectl label --overwrite nodes control02 ceph-osd=enabled
+node/control02 labeled
+root@control01:~# kubectl label --overwrite nodes control02 ceph-mds=enabled
+node/control02 labeled
+root@control01:~# kubectl label --overwrite nodes control02 ceph-node=enabled
+node/control02 labeled
+```
 
+## 2.6. ceph-rook.sh 스크립트 수정
+원래 하라는 거...
+```
+> 43 라인
+nodeSelector:
+  ceph-node: enabled
 
+> 241 라인
+아래 항목 삭제, device filter 추가 (서버에 장착된 Disk별로 다름)
+    devices:
+      - name: "${CEPH_OSD_DATA_DEVICE}"
+        config:
+          databaseSizeMB: "5120"
+          walSizeMB: "2048"
+
+deviceFilter: "^sd[a-c]"
+```
+
+```
+root@control01:~/osh/openstack-helm# sed -n '40,45p' tools/deployment/ceph/ceph-rook.sh
+  pullPolicy: IfNotPresent
+crds:
+  enabled: true
+nodeSelector:
+  ceph-node: enabled
+tolerations: []
+root@control01:~/osh/openstack-helm# sed -n '235,245p' tools/deployment/ceph/ceph-rook.sh
+    mon: system-node-critical
+    osd: system-node-critical
+    mgr: system-cluster-critical
+  storage: # cluster level storage configuration and selection
+    useAllNodes: true
+    useAllDevices: false
+    deviceFilter: "^sd[a-f]"
+  disruptionManagement:
+    managePodBudgets: true
+    osdMaintenanceTimeout: 30
+    pgHealthCheckTimeout: 0
 ```
 
 
 
 
+```
+root@control01:~/osh/openstack-helm# ./tools/deployment/ceph/ceph-rook.sh
++ ROOK_RELEASE=v1.19.3
++ : /dev/loop100
++ :
++ '[' -s /tmp/ceph-fs-uuid.txt ']'
++ uuidgen
+++ cat /tmp/ceph-fs-uuid.txt
++ CEPH_FS_ID=99f59474-da8a-4a6f-814c-a27f8b5cb238
++ . /etc/os-release
+++ PRETTY_NAME='Ubuntu 24.04.4 LTS'
+++ NAME=Ubuntu
+++ VERSION_ID=24.04
+++ VERSION='24.04.4 LTS (Noble Numbat)'
+++ VERSION_CODENAME=noble
+++ ID=ubuntu
+++ ID_LIKE=debian
+++ HOME_URL=https://www.ubuntu.com/
+++ SUPPORT_URL=https://help.ubuntu.com/
+++ BUG_REPORT_URL=https://bugs.launchpad.net/ubuntu/
+++ PRIVACY_POLICY_URL=https://www.ubuntu.com/legal/terms-and-policies/privacy-policy
+++ UBUNTU_CODENAME=noble
+++ LOGO=ubuntu-logo
++ '[' xubuntu == xcentos ']'
++ '[' xubuntu == xubuntu ']'
+++ uname -r
++ dpkg --compare-versions 6.8.0-110-generic lt 4.5
++ CRUSH_TUNABLES=null
++ tee /tmp/rook.yaml
+image:
+  repository: rook/ceph
+  tag: v1.19.3
+  pullPolicy: IfNotPresent
+crds:
+  enabled: true
+nodeSelector:
+  ceph-node: enabled
+tolerations: []
+unreachableNodeTolerationSeconds: 5
+currentNamespaceOnly: false
+annotations: {}
+logLevel: INFO
+rbacEnable: true
+pspEnable: false
+priorityClassName:
+allowLoopDevices: true
+csi:
+  enableRbdDriver: true
+  enableCephfsDriver: false
+  enableGrpcMetrics: false
+  enableCSIHostNetwork: true
+  enableCephfsSnapshotter: true
+  enableNFSSnapshotter: true
+  enableRBDSnapshotter: true
+  enablePluginSelinuxHostMount: false
+  enableCSIEncryption: false
+  pluginPriorityClassName: system-node-critical
+  provisionerPriorityClassName: system-cluster-critical
+  rbdFSGroupPolicy: "File"
+  cephFSFSGroupPolicy: "File"
+  nfsFSGroupPolicy: "File"
+  enableOMAPGenerator: false
+  cephFSKernelMountOptions:
+  enableMetadata: false
+  provisionerReplicas: 1
+  clusterName: ceph
+  logLevel: 0
+  sidecarLogLevel:
+  rbdPluginUpdateStrategy:
+  rbdPluginUpdateStrategyMaxUnavailable:
+  cephFSPluginUpdateStrategy:
+  nfsPluginUpdateStrategy:
+  grpcTimeoutInSeconds: 150
+  allowUnsupportedVersion: false
+  csiRBDPluginVolume:
+  csiRBDPluginVolumeMount:
+  csiCephFSPluginVolume:
+  csiCephFSPluginVolumeMount:
+  provisionerTolerations:
+  provisionerNodeAffinity: #key1=value1,value2; key2=value3
+  pluginTolerations:
+  pluginNodeAffinity: # key1=value1,value2; key2=value3
+  enableLiveness: false
+  cephfsGrpcMetricsPort:
+  cephfsLivenessMetricsPort:
+  rbdGrpcMetricsPort:
+  csiAddonsPort:
+  forceCephFSKernelClient: true
+  rbdLivenessMetricsPort:
+  kubeletDirPath:
+  cephcsi:
+    image:
+  registrar:
+    image:
+  provisioner:
+    image:
+  snapshotter:
+    image:
+  attacher:
+    image:
+  resizer:
+    image:
+  imagePullPolicy: IfNotPresent
+  cephfsPodLabels: #"key1=value1,key2=value2"
+  nfsPodLabels: #"key1=value1,key2=value2"
+  rbdPodLabels: #"key1=value1,key2=value2"
+  csiAddons:
+    enabled: false
+    image: "quay.io/csiaddons/k8s-sidecar:v0.5.0"
+  nfs:
+    enabled: false
+  topology:
+    enabled: false
+    domainLabels:
+  readAffinity:
+    enabled: false
+    crushLocationLabels:
+  cephFSAttachRequired: true
+  rbdAttachRequired: true
+  nfsAttachRequired: true
+enableDiscoveryDaemon: false
+cephCommandsTimeoutSeconds: "15"
+useOperatorHostNetwork:
+discover:
+  toleration:
+  tolerationKey:
+  tolerations:
+  nodeAffinity: # key1=value1,value2; key2=value3
+  podLabels: # "key1=value1,key2=value2"
+  resources:
+disableAdmissionController: true
+hostpathRequiresPrivileged: false
+disableDeviceHotplug: false
+discoverDaemonUdev:
+imagePullSecrets:
+enableOBCWatchOperatorNamespace: true
+admissionController:
++ helm repo add rook-release https://charts.rook.io/release
+"rook-release" has been added to your repositories
++ helm install --create-namespace --namespace rook-ceph rook-ceph rook-release/rook-ceph --v                                                ersion v1.19.3 -f /tmp/rook.yaml
+NAME: rook-ceph
+LAST DEPLOYED: Thu May  7 10:52:40 2026
+NAMESPACE: rook-ceph
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+The Rook Operator has been installed.
 
+Visit https://rook.io/docs/rook/latest for instructions on how to create and configure Rook                                                 clusters
 
+Important Notes:
+- You must customize the 'CephCluster' resource in the sample manifests for your cluster.
+- Each CephCluster must be deployed to its own namespace, the samples use `rook-ceph` for th                                                e namespace.
+- The sample manifests assume you also installed the rook-ceph operator in the `rook-ceph` n                                                amespace.
+- The helm chart includes all the RBAC required to create a CephCluster CRD in the same name                                                space.
+- Any disk devices you add to the cluster in the 'CephCluster' must be empty (no filesystem                                                 and no partitions).
+- The CSI operator will manage the CSI driver lifecycle for RBD, CephFS, and NFS drivers.
++ helm osh wait-for-pods rook-ceph
++ tee /tmp/ceph.yaml
+operatorNamespace: rook-ceph
+clusterName: ceph
+kubeVersion:
+configOverride: |
+  [global]
+  mon_allow_pool_delete = true
+  mon_allow_pool_size_one = true
+  osd_pool_default_size = 1
+  osd_pool_default_min_size = 1
+  mon_warn_on_pool_no_redundancy = false
+  auth_allow_insecure_global_id_reclaim = false
+toolbox:
+  enabled: true
+  tolerations: []
+  affinity: {}
+  resources:
+    limits:
+      cpu: "100m"
+      memory: "64Mi"
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+  priorityClassName:
+monitoring:
+  enabled: false
+  metricsDisabled: true
+  createPrometheusRules: false
+  rulesNamespaceOverride:
+  prometheusRule:
+    labels: {}
+    annotations: {}
+pspEnable: false
+cephClusterSpec:
+  cephVersion:
+    image: quay.io/ceph/ceph:v20.2.1
+    allowUnsupported: false
+  dataDirHostPath: /var/lib/rook
+  skipUpgradeChecks: false
+  continueUpgradeAfterChecksEvenIfNotHealthy: false
+  waitTimeoutForHealthyOSDInMinutes: 10
+  mon:
+    count: 3
+    allowMultiplePerNode: false
+  mgr:
+    count: 3
+    allowMultiplePerNode: false
+    modules:
+      - name: pg_autoscaler
+        enabled: true
+      - name: dashboard
+        enabled: false
+      - name: nfs
+        enabled: false
+  dashboard:
+    enabled: true
+    ssl: true
+  network:
+    connections:
+      encryption:
+        enabled: false
+      compression:
+        enabled: false
+      requireMsgr2: false
+    provider: host
+  crashCollector:
+    disable: true
+  logCollector:
+    enabled: true
+    periodicity: daily # one of: hourly, daily, weekly, monthly
+    maxLogSize: 500M # SUFFIX may be 'M' or 'G'. Must be at least 1M.
+  cleanupPolicy:
+    confirmation: ""
+    sanitizeDisks:
+      method: quick
+      dataSource: zero
+      iteration: 1
+    allowUninstallWithVolumes: false
+  monitoring:
+    enabled: false
+    metricsDisabled: true
+
+  removeOSDsIfOutAndSafeToRemove: false
+  priorityClassNames:
+    mon: system-node-critical
+    osd: system-node-critical
+    mgr: system-cluster-critical
+  storage: # cluster level storage configuration and selection
+    useAllNodes: true
+    useAllDevices: false
+    deviceFilter: "^sd[a-f]"
+  disruptionManagement:
+    managePodBudgets: true
+    osdMaintenanceTimeout: 30
+    pgHealthCheckTimeout: 0
+  healthCheck:
+    daemonHealth:
+      mon:
+        disabled: false
+        interval: 45s
+      osd:
+        disabled: false
+        interval: 60s
+      status:
+        disabled: false
+        interval: 60s
+    livenessProbe:
+      mon:
+        disabled: false
+      mgr:
+        disabled: false
+      osd:
+        disabled: false
+ingress:
+  dashboard:
+    {}
+cephBlockPools:
+  - name: rbd
+    namespace: ceph
+    spec:
+      failureDomain: host
+      replicated:
+        size: 1
+    storageClass:
+      enabled: true
+      name: general
+      isDefault: true
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      volumeBindingMode: "Immediate"
+      mountOptions: []
+      allowedTopologies: []
+      parameters:
+        imageFormat: "2"
+        imageFeatures: layering
+        csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+        csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+        csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
+        csi.storage.k8s.io/fstype: ext4
+cephFileSystems: []
+# Not needed in general for openstack-helm. Uncomment if needed.
+# cephFileSystems:
+#   - name: cephfs
+#     namespace: ceph
+#     spec:
+#       metadataPool:
+#         replicated:
+#           size: 1
+#       dataPools:
+#         - failureDomain: host
+#           replicated:
+#             size: 1
+#           name: data
+#       metadataServer:
+#         activeCount: 1
+#         activeStandby: false
+#         priorityClassName: system-cluster-critical
+#     storageClass:
+#       enabled: true
+#       isDefault: false
+#       name: ceph-filesystem
+#       pool: data0
+#       reclaimPolicy: Delete
+#       allowVolumeExpansion: true
+#       volumeBindingMode: "Immediate"
+#       mountOptions: []
+#       parameters:
+#         csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
+#         csi.storage.k8s.io/provisioner-secret-namespace: "{{ .Release.Namespace }}"
+#         csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
+#         csi.storage.k8s.io/controller-expand-secret-namespace: "{{ .Release.Namespace }}"
+#         csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
+#         csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
+#         csi.storage.k8s.io/fstype: ext4
+cephBlockPoolsVolumeSnapshotClass:
+  enabled: false
+  name: general
+  isDefault: false
+  deletionPolicy: Delete
+  annotations: {}
+  labels: {}
+  parameters: {}
+cephObjectStores:
+  - name: default
+    namespace: ceph
+    spec:
+      allowUsersInNamespaces:
+        - "*"
+      metadataPool:
+        failureDomain: host
+        replicated:
+          size: 1
+      dataPool:
+        failureDomain: host
+        replicated:
+          size: 1
+      preservePoolsOnDelete: true
+      gateway:
+        port: 8080
+        instances: 1
+        priorityClassName: system-cluster-critical
+    storageClass:
+      enabled: true
+      name: ceph-bucket
+      reclaimPolicy: Delete
+      volumeBindingMode: "Immediate"
+      parameters:
+        region: us-east-1
++ helm upgrade --install --create-namespace --namespace ceph rook-ceph-cluster --set operato                                                rNamespace=rook-ceph rook-release/rook-ceph-cluster --version v1.19.3 -f /tmp/ceph.yaml
+Release "rook-ceph-cluster" does not exist. Installing it now.
+NAME: rook-ceph-cluster
+LAST DEPLOYED: Thu May  7 10:53:26 2026
+NAMESPACE: ceph
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+The Ceph Cluster has been installed. Check its status by running:
+  kubectl --namespace ceph get cephcluster
+
+Visit https://rook.io/docs/rook/latest/CRDs/Cluster/ceph-cluster-crd/ for more information a                                                bout the Ceph CRD.
+
+Important Notes:
+- You can only deploy a single cluster per namespace
+- If you wish to delete this cluster and start fresh, you will also have to wipe the OSD dis                                                ks using `sfdisk`
++ helm osh wait-for-pods rook-ceph
++ kubectl wait --namespace=ceph --for=condition=ready pod --selector=app=rook-ceph-tools --t                                                imeout=600s
+pod/rook-ceph-tools-665997cbf8-v48gx condition met
+++ date +%s
++ wait_start_time=1778119025
+++ date +%s
++ [[ 0 -lt 1800 ]]
++ sleep 30
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-mon --no-headers
+++ awk '{ print $1 }'
++ MON_PODS=rook-ceph-mon-c-canary-7cbc5d6d4c-9cxzj
+++ echo rook-ceph-mon-c-canary-7cbc5d6d4c-9cxzj
+++ wc -w
++ MON_PODS_NUM=1
++ MON_PODS_READY=0
++ for MON_POD in $MON_PODS
++ kubectl get pod --namespace=ceph rook-ceph-mon-c-canary-7cbc5d6d4c-9cxzj
++ kubectl wait --namespace=ceph --for=condition=ready pod/rook-ceph-mon-c-canary-7cbc5d6d4c-9cxzj --timeout=60s
+pod/rook-ceph-mon-c-canary-7cbc5d6d4c-9cxzj condition met
++ MON_PODS_READY=1
++ [[ 1 == 1 ]]
++ echo 'Monitor pods are ready. Moving on.'
+Monitor pods are ready. Moving on.
++ break
++ echo '=========== CEPH K8S PODS LIST ============'
+=========== CEPH K8S PODS LIST ============
++ kubectl get pods -n rook-ceph -o wide
+NAME                                                     READY   STATUS              RESTARTS   AGE     IP               NODE        NOMINATED NODE   READINESS GATES
+ceph-csi-controller-manager-6567d74759-hkw76             1/1     Running             0          5m5s    10.233.91.4      gpu01       <none>           <none>
+rook-ceph-operator-bf7b7fc44-m7whm                       1/1     Running             0          5m5s    10.233.116.5     control02   <none>           <none>
+rook-ceph.rbd.csi.ceph.com-ctrlplugin-79cd9bdf45-7lgjz   5/5     Running             0          2m58s   10.233.91.6      gpu01       <none>           <none>
+rook-ceph.rbd.csi.ceph.com-nodeplugin-2qwhh              0/2     ContainerCreating   0          2m58s   192.168.11.108   gpu02       <none>           <none>
+rook-ceph.rbd.csi.ceph.com-nodeplugin-56q2w              2/2     Running             0          2m58s   192.168.11.103   control03   <none>           <none>
+rook-ceph.rbd.csi.ceph.com-nodeplugin-9m99p              2/2     Running             0          2m58s   192.168.11.104   cpu01       <none>           <none>
+rook-ceph.rbd.csi.ceph.com-nodeplugin-dz85n              2/2     Running             0          2m58s   192.168.11.107   gpu01       <none>           <none>
+rook-ceph.rbd.csi.ceph.com-nodeplugin-ggb79              2/2     Running             0          2m58s   192.168.11.102   control02   <none>           <none>
+rook-ceph.rbd.csi.ceph.com-nodeplugin-s86p2              2/2     Running             0          2m58s   192.168.11.105   cpu02       <none>           <none>
+rook-ceph.rbd.csi.ceph.com-nodeplugin-v2gs6              2/2     Running             0          2m58s   192.168.11.106   cpu03       <none>           <none>
++ kubectl get pods -n ceph -o wide
+NAME                                      READY   STATUS        RESTARTS   AGE     IP               NODE    NOMINATED NODE   READINESS GATES
+rook-ceph-mon-c-canary-7cbc5d6d4c-9cxzj   2/2     Terminating   0          3m      192.168.11.108   gpu02   <none>           <none>
+rook-ceph-tools-665997cbf8-v48gx          1/1     Running       0          4m24s   192.168.11.108   gpu02   <none>           <none>
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-rgw --no-headers
+++ awk '{print $1; exit}'
+No resources found in ceph namespace.
++ RGW_POD=
+++ date +%s
++ wait_start_time=1778119072
++ [[ -z '' ]]
+++ date +%s
++ [[ 0 -lt 1800 ]]
++ sleep 30
++ date '+%Y-%m-%d %H:%M:%S'
+2026-05-07 10:58:22
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-tools --no-headers
+++ grep Running
+++ awk '{ print $1; exit }'
++ TOOLS_POD=rook-ceph-tools-665997cbf8-v48gx
++ [[ -z rook-ceph-tools-665997cbf8-v48gx ]]
++ echo '=========== CEPH STATUS ============'
+=========== CEPH STATUS ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph -s
+  cluster:
+    id:     bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    health: HEALTH_OK
+
+  services:
+    mon: 3 daemons, quorum a,b,c (age 7s) [leader: a]
+    mgr: no daemons active
+    osd: 0 osds: 0 up, 0 in
+
+  data:
+    pools:   0 pools, 0 pgs
+    objects: 0 objects, 0 B
+    usage:   0 B used, 0 B / 0 B avail
+    pgs:
+
++ echo '=========== CEPH OSD POOL LIST ============'
+=========== CEPH OSD POOL LIST ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph osd pool ls
++ echo '=========== CEPH K8S PODS LIST ============'
+=========== CEPH K8S PODS LIST ============
++ kubectl get pods -n ceph -o wide
+NAME                               READY   STATUS    RESTARTS   AGE     IP               NODE    NOMINATED NODE   READINESS GATES
+rook-ceph-mgr-a-66bbc6dc4b-5rv24   2/3     Running   0          4s      192.168.11.105   cpu02   <none>           <none>
+rook-ceph-mgr-b-94bd58b6f-lqfwq    2/3     Running   0          4s      192.168.11.107   gpu01   <none>           <none>
+rook-ceph-mgr-c-9bddbd7b4-qrbz6    2/3     Running   0          4s      192.168.11.108   gpu02   <none>           <none>
+rook-ceph-mon-a-f5c4df79d-tbb8r    2/2     Running   0          31s     192.168.11.107   gpu01   <none>           <none>
+rook-ceph-mon-b-795ffcd64d-jvx55   2/2     Running   0          27s     192.168.11.105   cpu02   <none>           <none>
+rook-ceph-mon-c-7d65b7f68c-nrt9t   1/2     Running   0          17s     192.168.11.108   gpu02   <none>           <none>
+rook-ceph-tools-665997cbf8-v48gx   1/1     Running   0          4m59s   192.168.11.108   gpu02   <none>           <none>
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-rgw --no-headers
+++ awk '{print $1; exit}'
+No resources found in ceph namespace.
++ RGW_POD=
++ [[ -z '' ]]
+++ date +%s
++ [[ 35 -lt 1800 ]]
++ sleep 30
++ date '+%Y-%m-%d %H:%M:%S'
+2026-05-07 10:58:57
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-tools --no-headers
+++ grep Running
+++ awk '{ print $1; exit }'
++ TOOLS_POD=rook-ceph-tools-665997cbf8-v48gx
++ [[ -z rook-ceph-tools-665997cbf8-v48gx ]]
++ echo '=========== CEPH STATUS ============'
+=========== CEPH STATUS ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph -s
+  cluster:
+    id:     bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    health: HEALTH_OK
+
+  services:
+    mon: 3 daemons, quorum a,b,c (age 44s) [leader: a]
+    mgr: a(active, since 11s), standbys: b, c
+    osd: 0 osds: 0 up, 0 in
+
+  data:
+    pools:   0 pools, 0 pgs
+    objects: 0 objects, 0 B
+    usage:   0 B used, 0 B / 0 B avail
+    pgs:
+
++ echo '=========== CEPH OSD POOL LIST ============'
+=========== CEPH OSD POOL LIST ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph osd pool ls
++ echo '=========== CEPH K8S PODS LIST ============'
+=========== CEPH K8S PODS LIST ============
++ kubectl get pods -n ceph -o wide
+NAME                                    READY   STATUS            RESTARTS   AGE     IP               NODE        NOMINATED NODE   READINESS GATES
+rook-ceph-mgr-a-66bbc6dc4b-5rv24        3/3     Running           0          43s     192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mgr-b-94bd58b6f-lqfwq         3/3     Running           0          43s     192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mgr-c-9bddbd7b4-qrbz6         3/3     Running           0          43s     192.168.11.108   gpu02       <none>           <none>
+rook-ceph-mon-a-f5c4df79d-tbb8r         2/2     Running           0          70s     192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mon-b-795ffcd64d-jvx55        2/2     Running           0          66s     192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mon-c-7d65b7f68c-nrt9t        2/2     Running           0          56s     192.168.11.108   gpu02       <none>           <none>
+rook-ceph-osd-prepare-control02-t8nbh   0/1     PodInitializing   0          19s     10.233.116.6     control02   <none>           <none>
+rook-ceph-osd-prepare-control03-wvldw   0/1     PodInitializing   0          21s     10.233.73.8      control03   <none>           <none>
+rook-ceph-osd-prepare-cpu01-vlxdc       0/1     PodInitializing   0          21s     10.233.79.2      cpu01       <none>           <none>
+rook-ceph-osd-prepare-cpu02-w2r8s       0/1     Completed         0          20s     10.233.126.7     cpu02       <none>           <none>
+rook-ceph-osd-prepare-cpu03-gngwt       0/1     PodInitializing   0          20s     10.233.121.2     cpu03       <none>           <none>
+rook-ceph-osd-prepare-gpu01-vvs46       0/1     Completed         0          19s     10.233.91.7      gpu01       <none>           <none>
+rook-ceph-osd-prepare-gpu02-brm8v       0/1     Completed         0          19s     10.233.112.6     gpu02       <none>           <none>
+rook-ceph-tools-665997cbf8-v48gx        1/1     Running           0          5m38s   192.168.11.108   gpu02       <none>           <none>
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-rgw --no-headers
+++ awk '{print $1; exit}'
+No resources found in ceph namespace.
++ RGW_POD=
++ [[ -z '' ]]
+++ date +%s
++ [[ 74 -lt 1800 ]]
++ sleep 30
++ date '+%Y-%m-%d %H:%M:%S'
+2026-05-07 10:59:36
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-tools --no-headers
+++ grep Running
+++ awk '{ print $1; exit }'
++ TOOLS_POD=rook-ceph-tools-665997cbf8-v48gx
++ [[ -z rook-ceph-tools-665997cbf8-v48gx ]]
++ echo '=========== CEPH STATUS ============'
+=========== CEPH STATUS ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph -s
+  cluster:
+    id:     bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    health: HEALTH_WARN
+            OSD count 0 < osd_pool_default_size 1
+
+  services:
+    mon: 3 daemons, quorum a,b,c (age 84s) [leader: a]
+    mgr: a(active, since 25s), standbys: b, c
+    osd: 0 osds: 0 up, 0 in
+
+  data:
+    pools:   0 pools, 0 pgs
+    objects: 0 objects, 0 B
+    usage:   0 B used, 0 B / 0 B avail
+    pgs:
+
++ echo '=========== CEPH OSD POOL LIST ============'
+=========== CEPH OSD POOL LIST ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph osd pool ls
++ echo '=========== CEPH K8S PODS LIST ============'
+=========== CEPH K8S PODS LIST ============
++ kubectl get pods -n ceph -o wide
+NAME                                    READY   STATUS            RESTARTS   AGE     IP               NODE        NOMINATED NODE   READINESS GATES
+rook-ceph-mgr-a-66bbc6dc4b-5rv24        3/3     Running           0          83s     192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mgr-b-94bd58b6f-lqfwq         3/3     Running           0          83s     192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mgr-c-9bddbd7b4-qrbz6         3/3     Running           0          83s     192.168.11.108   gpu02       <none>           <none>
+rook-ceph-mon-a-f5c4df79d-tbb8r         2/2     Running           0          110s    192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mon-b-795ffcd64d-jvx55        2/2     Running           0          106s    192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mon-c-7d65b7f68c-nrt9t        2/2     Running           0          96s     192.168.11.108   gpu02       <none>           <none>
+rook-ceph-osd-prepare-control02-t8nbh   0/1     PodInitializing   0          59s     10.233.116.6     control02   <none>           <none>
+rook-ceph-osd-prepare-control03-wvldw   0/1     PodInitializing   0          61s     10.233.73.8      control03   <none>           <none>
+rook-ceph-osd-prepare-cpu01-vlxdc       0/1     PodInitializing   0          61s     10.233.79.2      cpu01       <none>           <none>
+rook-ceph-osd-prepare-cpu02-w2r8s       0/1     Completed         0          60s     10.233.126.7     cpu02       <none>           <none>
+rook-ceph-osd-prepare-cpu03-gngwt       0/1     PodInitializing   0          60s     10.233.121.2     cpu03       <none>           <none>
+rook-ceph-osd-prepare-gpu01-vvs46       0/1     Completed         0          59s     10.233.91.7      gpu01       <none>           <none>
+rook-ceph-osd-prepare-gpu02-brm8v       0/1     Completed         0          59s     10.233.112.6     gpu02       <none>           <none>
+rook-ceph-tools-665997cbf8-v48gx        1/1     Running           0          6m18s   192.168.11.108   gpu02       <none>           <none>
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-rgw --no-headers
+++ awk '{print $1; exit}'
+No resources found in ceph namespace.
++ RGW_POD=
++ [[ -z '' ]]
+++ date +%s
++ [[ 114 -lt 1800 ]]
++ sleep 30
++ date '+%Y-%m-%d %H:%M:%S'
+2026-05-07 11:00:16
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-tools --no-headers
+++ grep Running
+++ awk '{ print $1; exit }'
++ TOOLS_POD=rook-ceph-tools-665997cbf8-v48gx
++ [[ -z rook-ceph-tools-665997cbf8-v48gx ]]
++ echo '=========== CEPH STATUS ============'
+=========== CEPH STATUS ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph -s
+  cluster:
+    id:     bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    health: HEALTH_OK
+
+  services:
+    mon: 3 daemons, quorum a,b,c (age 2m) [leader: a]
+    mgr: a(active, since 65s), standbys: b, c
+    osd: 8 osds: 2 up (since 5s), 8 in (since 13s)
+
+  data:
+    pools:   1 pools, 1 pgs
+    objects: 0 objects, 0 B
+    usage:   121 MiB used, 3.5 TiB / 3.5 TiB avail
+    pgs:     100.000% pgs unknown
+             1 unknown
+
++ echo '=========== CEPH OSD POOL LIST ============'
+=========== CEPH OSD POOL LIST ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph osd pool ls
+.mgr
+default.rgw.control
+rbd
++ echo '=========== CEPH K8S PODS LIST ============'
+=========== CEPH K8S PODS LIST ============
++ kubectl get pods -n ceph -o wide
+NAME                                    READY   STATUS      RESTARTS   AGE     IP               NODE        NOMINATED NODE   READINESS GATES
+rook-ceph-mgr-a-66bbc6dc4b-5rv24        3/3     Running     0          2m2s    192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mgr-b-94bd58b6f-lqfwq         3/3     Running     0          2m2s    192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mgr-c-9bddbd7b4-qrbz6         3/3     Running     0          2m2s    192.168.11.108   gpu02       <none>           <none>
+rook-ceph-mon-a-f5c4df79d-tbb8r         2/2     Running     0          2m29s   192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mon-b-795ffcd64d-jvx55        2/2     Running     0          2m25s   192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mon-c-7d65b7f68c-nrt9t        2/2     Running     0          2m15s   192.168.11.108   gpu02       <none>           <none>
+rook-ceph-osd-0-b8ff77fcd-xf5sk         1/2     Running     0          11s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-1-6555ccdbc9-55xws        1/2     Running     0          20s     192.168.11.103   control03   <none>           <none>
+rook-ceph-osd-2-5798984758-xr4vg        1/2     Running     0          11s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-3-575ff49f7d-h9km7        1/2     Running     0          20s     192.168.11.103   control03   <none>           <none>
+rook-ceph-osd-4-7c65755ccd-66fcm        1/2     Running     0          11s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-5-7d8786698-w6ll9         1/2     Running     0          11s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-6-85bfb9cd4c-bvmtb        1/2     Running     0          11s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-7-5d78b94bb4-6dbz9        1/2     Running     0          11s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-prepare-control02-t8nbh   0/1     Completed   0          98s     10.233.116.6     control02   <none>           <none>
+rook-ceph-osd-prepare-control03-wvldw   0/1     Completed   0          100s    10.233.73.8      control03   <none>           <none>
+rook-ceph-osd-prepare-cpu01-vlxdc       0/1     Completed   0          100s    10.233.79.2      cpu01       <none>           <none>
+rook-ceph-osd-prepare-cpu02-w2r8s       0/1     Completed   0          99s     10.233.126.7     cpu02       <none>           <none>
+rook-ceph-osd-prepare-cpu03-gngwt       0/1     Completed   0          99s     10.233.121.2     cpu03       <none>           <none>
+rook-ceph-osd-prepare-gpu01-vvs46       0/1     Completed   0          98s     10.233.91.7      gpu01       <none>           <none>
+rook-ceph-osd-prepare-gpu02-brm8v       0/1     Completed   0          98s     10.233.112.6     gpu02       <none>           <none>
+rook-ceph-tools-665997cbf8-v48gx        1/1     Running     0          6m57s   192.168.11.108   gpu02       <none>           <none>
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-rgw --no-headers
+++ awk '{print $1; exit}'
+No resources found in ceph namespace.
++ RGW_POD=
++ [[ -z '' ]]
+++ date +%s
++ [[ 153 -lt 1800 ]]
++ sleep 30
++ date '+%Y-%m-%d %H:%M:%S'
+2026-05-07 11:00:55
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-tools --no-headers
+++ grep Running
+++ awk '{ print $1; exit }'
++ TOOLS_POD=rook-ceph-tools-665997cbf8-v48gx
++ [[ -z rook-ceph-tools-665997cbf8-v48gx ]]
++ echo '=========== CEPH STATUS ============'
+=========== CEPH STATUS ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph -s
+  cluster:
+    id:     bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    health: HEALTH_OK
+
+  services:
+    mon: 3 daemons, quorum a,b,c (age 2m) [leader: a]
+    mgr: a(active, since 104s), standbys: b, c
+    osd: 8 osds: 8 up (since 37s), 8 in (since 53s)
+    rgw: 1 daemon active (1 hosts, 1 zones)
+
+  data:
+    pools:   10 pools, 59 pgs
+    objects: 227 objects, 589 KiB
+    usage:   216 MiB used, 14 TiB / 14 TiB avail
+    pgs:     59 active+clean
+
+  io:
+    client:   228 KiB/s rd, 10 KiB/s wr, 289 op/s rd, 148 op/s wr
+
++ echo '=========== CEPH OSD POOL LIST ============'
+=========== CEPH OSD POOL LIST ============
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph osd pool ls
+.mgr
+default.rgw.control
+rbd
+default.rgw.meta
+default.rgw.log
+default.rgw.buckets.index
+default.rgw.buckets.non-ec
+default.rgw.otp
+.rgw.root
+default.rgw.buckets.data
++ echo '=========== CEPH K8S PODS LIST ============'
+=========== CEPH K8S PODS LIST ============
++ kubectl get pods -n ceph -o wide
+NAME                                      READY   STATUS      RESTARTS   AGE     IP               NODE        NOMINATED NODE   READINESS GATES
+rook-ceph-mgr-a-66bbc6dc4b-5rv24          3/3     Running     0          2m41s   192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mgr-b-94bd58b6f-lqfwq           3/3     Running     0          2m41s   192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mgr-c-9bddbd7b4-qrbz6           3/3     Running     0          2m41s   192.168.11.108   gpu02       <none>           <none>
+rook-ceph-mon-a-f5c4df79d-tbb8r           2/2     Running     0          3m8s    192.168.11.107   gpu01       <none>           <none>
+rook-ceph-mon-b-795ffcd64d-jvx55          2/2     Running     0          3m4s    192.168.11.105   cpu02       <none>           <none>
+rook-ceph-mon-c-7d65b7f68c-nrt9t          2/2     Running     0          2m54s   192.168.11.108   gpu02       <none>           <none>
+rook-ceph-osd-0-b8ff77fcd-xf5sk           2/2     Running     0          50s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-1-6555ccdbc9-55xws          2/2     Running     0          59s     192.168.11.103   control03   <none>           <none>
+rook-ceph-osd-2-5798984758-xr4vg          2/2     Running     0          50s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-3-575ff49f7d-h9km7          2/2     Running     0          59s     192.168.11.103   control03   <none>           <none>
+rook-ceph-osd-4-7c65755ccd-66fcm          2/2     Running     0          50s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-5-7d8786698-w6ll9           2/2     Running     0          50s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-6-85bfb9cd4c-bvmtb          2/2     Running     0          50s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-7-5d78b94bb4-6dbz9          2/2     Running     0          50s     192.168.11.102   control02   <none>           <none>
+rook-ceph-osd-prepare-control02-t8nbh     0/1     Completed   0          2m17s   10.233.116.6     control02   <none>           <none>
+rook-ceph-osd-prepare-control03-wvldw     0/1     Completed   0          2m19s   10.233.73.8      control03   <none>           <none>
+rook-ceph-osd-prepare-cpu01-vlxdc         0/1     Completed   0          2m19s   10.233.79.2      cpu01       <none>           <none>
+rook-ceph-osd-prepare-cpu02-w2r8s         0/1     Completed   0          2m18s   10.233.126.7     cpu02       <none>           <none>
+rook-ceph-osd-prepare-cpu03-gngwt         0/1     Completed   0          2m18s   10.233.121.2     cpu03       <none>           <none>
+rook-ceph-osd-prepare-gpu01-vvs46         0/1     Completed   0          2m17s   10.233.91.7      gpu01       <none>           <none>
+rook-ceph-osd-prepare-gpu02-brm8v         0/1     Completed   0          2m17s   10.233.112.6     gpu02       <none>           <none>
+rook-ceph-rgw-default-a-597466649-8wr6w   1/2     Running     0          10s     192.168.11.103   control03   <none>           <none>
+rook-ceph-tools-665997cbf8-v48gx          1/1     Running     0          7m36s   192.168.11.108   gpu02       <none>           <none>
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-rgw --no-headers
+++ awk '{print $1; exit}'
++ RGW_POD=rook-ceph-rgw-default-a-597466649-8wr6w
++ [[ -z rook-ceph-rgw-default-a-597466649-8wr6w ]]
++ helm osh wait-for-pods ceph
+++ kubectl get pods --namespace=ceph --selector=app=rook-ceph-tools --no-headers
+++ grep Running
+++ awk '{ print $1; exit }'
++ TOOLS_POD=rook-ceph-tools-665997cbf8-v48gx
++ kubectl exec -n ceph rook-ceph-tools-665997cbf8-v48gx -- ceph -s
+  cluster:
+    id:     bdb3b486-d761-48b6-b3b8-02f9710c1e3a
+    health: HEALTH_OK
+
+  services:
+    mon: 3 daemons, quorum a,b,c (age 3m) [leader: a]
+    mgr: a(active, since 2m), standbys: b, c
+    osd: 8 osds: 8 up (since 70s), 8 in (since 86s)
+    rgw: 1 daemon active (1 hosts, 1 zones)
+
+  data:
+    pools:   10 pools, 121 pgs
+    objects: 276 objects, 590 KiB
+    usage:   217 MiB used, 14 TiB / 14 TiB avail
+    pgs:     121 active+clean
+
+  io:
+    client:   127 B/s rd, 127 B/s wr, 0 op/s rd, 0 op/s wr
+    recovery: 2 B/s, 0 objects/s
+```
+
+결과 확인
+```
+root@control01:~/osh/openstack-helm# kubectl get pod -A | grep rook
+ceph                           rook-ceph-mgr-a-66bbc6dc4b-5rv24                         3/3     Running     0          6m34s
+ceph                           rook-ceph-mgr-b-94bd58b6f-lqfwq                          3/3     Running     0          6m34s
+ceph                           rook-ceph-mgr-c-9bddbd7b4-qrbz6                          3/3     Running     0          6m34s
+ceph                           rook-ceph-mon-a-f5c4df79d-tbb8r                          2/2     Running     0          7m1s
+ceph                           rook-ceph-mon-b-795ffcd64d-jvx55                         2/2     Running     0          6m57s
+ceph                           rook-ceph-mon-c-7d65b7f68c-nrt9t                         2/2     Running     0          6m47s
+ceph                           rook-ceph-osd-0-b8ff77fcd-xf5sk                          2/2     Running     0          4m43s
+ceph                           rook-ceph-osd-1-6555ccdbc9-55xws                         2/2     Running     0          4m52s
+ceph                           rook-ceph-osd-2-5798984758-xr4vg                         2/2     Running     0          4m43s
+ceph                           rook-ceph-osd-3-575ff49f7d-h9km7                         2/2     Running     0          4m52s
+ceph                           rook-ceph-osd-4-7c65755ccd-66fcm                         2/2     Running     0          4m43s
+ceph                           rook-ceph-osd-5-7d8786698-w6ll9                          2/2     Running     0          4m43s
+ceph                           rook-ceph-osd-6-85bfb9cd4c-bvmtb                         2/2     Running     0          4m43s
+ceph                           rook-ceph-osd-7-5d78b94bb4-6dbz9                         2/2     Running     0          4m43s
+ceph                           rook-ceph-osd-prepare-control02-t8nbh                    0/1     Completed   0          6m10s
+ceph                           rook-ceph-osd-prepare-control03-wvldw                    0/1     Completed   0          6m12s
+ceph                           rook-ceph-osd-prepare-cpu01-vlxdc                        0/1     Completed   0          6m12s
+ceph                           rook-ceph-osd-prepare-cpu02-w2r8s                        0/1     Completed   0          6m11s
+ceph                           rook-ceph-osd-prepare-cpu03-gngwt                        0/1     Completed   0          6m11s
+ceph                           rook-ceph-osd-prepare-gpu01-vvs46                        0/1     Completed   0          6m10s
+ceph                           rook-ceph-osd-prepare-gpu02-brm8v                        0/1     Completed   0          6m10s
+ceph                           rook-ceph-rgw-default-a-597466649-8wr6w                  2/2     Running     0          4m3s
+ceph                           rook-ceph-tools-665997cbf8-v48gx                         1/1     Running     0          11m
+rook-ceph                      ceph-csi-controller-manager-6567d74759-hkw76             1/1     Running     0          12m
+rook-ceph                      rook-ceph-operator-bf7b7fc44-m7whm                       1/1     Running     0          12m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-ctrlplugin-79cd9bdf45-7lgjz   5/5     Running     0          10m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-2qwhh              2/2     Running     0          10m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-56q2w              2/2     Running     0          10m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-9m99p              2/2     Running     0          10m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-dz85n              2/2     Running     0          10m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-ggb79              2/2     Running     0          10m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-s86p2              2/2     Running     0          10m
+rook-ceph                      rook-ceph.rbd.csi.ceph.com-nodeplugin-v2gs6              2/2     Running     0          10m
+```
 
 
 
