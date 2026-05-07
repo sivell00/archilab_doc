@@ -1734,7 +1734,234 @@ conf:
 ceph_cluster_namespace: ceph
 ```
 
+2.9 기타등등 설치
+2.9.1. rabbitmq
+```
+root@control01:~/osh/openstack-helm# helm upgrade --install rabbitmq rabbitmq \
+    --namespace=openstack \
+    --set pod.replicas.server=3 \
+    --timeout=600s \
+    $(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c rabbitmq ${FEATURES})
+Base URL: https://opendev.org/openstack/openstack-helm/raw/branch/master/values_overrides
+Base path: /root/osh/openstack-helm/values_overrides
+Chart: rabbitmq
+Features: 2025.1 ubuntu_noble
+Override candidate: /root/osh/openstack-helm/values_overrides/rabbitmq/ubuntu_noble.yaml
+File not found: /root/osh/openstack-helm/values_overrides/rabbitmq/ubuntu_noble.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/rabbitmq/2025.1.yaml
+File not found: /root/osh/openstack-helm/values_overrides/rabbitmq/2025.1.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/rabbitmq/2025.1-ubuntu_noble.yaml
+File found: /root/osh/openstack-helm/values_overrides/rabbitmq/2025.1-ubuntu_noble.yaml
+Resulting override args: --values /root/osh/openstack-helm/values_overrides/rabbitmq/2025.1-ubuntu_noble.yaml
+Release "rabbitmq" does not exist. Installing it now.
+NAME: rabbitmq
+LAST DEPLOYED: Thu May  7 16:20:56 2026
+NAMESPACE: openstack
+STATUS: deployed
+REVISION: 1
+```
+확인
+```
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get pod -n openstack -o wide
+NAME                                                   READY   STATUS      RESTARTS   AGE     IP              NODE        NOMINATED NODE   READINESS GATES
+ceph-adapter-rook-namespace-client-ceph-config-4nxsx   0/1     Completed   0          30m     10.233.102.1    control01   <none>           <none>
+ceph-adapter-rook-namespace-client-key-xpvjv           0/1     Completed   0          30m     10.233.102.2    control01   <none>           <none>
+ingress-nginx-controller-6ccbb554f8-8jr7l              1/1     Running     0          25h     10.233.112.4    gpu02       <none>           <none>
+rabbitmq-cluster-wait-764vn                            0/1     Completed   0          7m43s   10.233.102.4    control01   <none>           <none>
+rabbitmq-rabbitmq-0                                    1/1     Running     0          7m43s   10.233.102.5    control01   <none>           <none>
+rabbitmq-rabbitmq-1                                    1/1     Running     0          7m43s   10.233.102.7    control01   <none>           <none>
+rabbitmq-rabbitmq-2                                    1/1     Running     0          7m43s   10.233.102.6    control01   <none>           <none>
+```
+2.9.2. mariadb
+```
+root@control01:~/osh/openstack-helm# helm upgrade --install mariadb mariadb \
+    --namespace=openstack \
+    --set pod.replicas.server=3 \
+    $(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c mariadb ${FEATURES})
+Base URL: https://opendev.org/openstack/openstack-helm/raw/branch/master/values_overrides
+Base path: /root/osh/openstack-helm/values_overrides
+Chart: mariadb
+Features: 2025.1 ubuntu_noble
+Override candidate: /root/osh/openstack-helm/values_overrides/mariadb/ubuntu_noble.yaml
+File not found: /root/osh/openstack-helm/values_overrides/mariadb/ubuntu_noble.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/mariadb/2025.1.yaml
+File not found: /root/osh/openstack-helm/values_overrides/mariadb/2025.1.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/mariadb/2025.1-ubuntu_noble.yaml
+File found: /root/osh/openstack-helm/values_overrides/mariadb/2025.1-ubuntu_noble.yaml
+Resulting override args: --values /root/osh/openstack-helm/values_overrides/mariadb/2025.1-ubuntu_noble.yaml
+Release "mariadb" does not exist. Installing it now.
+NAME: mariadb
+LAST DEPLOYED: Thu May  7 16:28:16 2026
+NAMESPACE: openstack
+STATUS: deployed
+REVISION: 1
+```
+확인
+```
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get pod -n openstack -o wide
+NAME                                                   READY   STATUS      RESTARTS        AGE     IP              NODE        NOMINATED NODE   READINESS GATES
+ceph-adapter-rook-namespace-client-ceph-config-4nxsx   0/1     Completed   0               33m     10.233.102.1    control01   <none>           <none>
+ceph-adapter-rook-namespace-client-key-xpvjv           0/1     Completed   0               33m     10.233.102.2    control01   <none>           <none>
+ingress-nginx-controller-6ccbb554f8-8jr7l              1/1     Running     0               25h     10.233.112.4    gpu02       <none>           <none>
+mariadb-controller-7f55fd7c67-g249l                    1/1     Running     0               2m58s   10.233.102.8    control01   <none>           <none>
+mariadb-server-0                                       1/1     Running     1 (2m19s ago)   2m58s   10.233.102.11   control01   <none>           <none>
+mariadb-server-1                                       1/1     Running     0               2m58s   10.233.102.9    control01   <none>           <none>
+mariadb-server-2                                       1/1     Running     1 (2m19s ago)   2m58s   10.233.102.10   control01   <none>           <none>
+rabbitmq-cluster-wait-764vn                            0/1     Completed   0               10m     10.233.102.4    control01   <none>           <none>
+rabbitmq-rabbitmq-0                                    1/1     Running     0               10m     10.233.102.5    control01   <none>           <none>
+rabbitmq-rabbitmq-1                                    1/1     Running     0               10m     10.233.102.7    control01   <none>           <none>
+rabbitmq-rabbitmq-2                                    1/1     Running     0               10m     10.233.102.6    control01   <none>           <none>
+```
 
+2.9.3. memcached
+```
+root@control01:~/osh/openstack-helm# helm upgrade --install memcached memcached \
+    --namespace=openstack \
+    $(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c memcached ${FEATURES})
+Base URL: https://opendev.org/openstack/openstack-helm/raw/branch/master/values_overrides
+Base path: /root/osh/openstack-helm/values_overrides
+Chart: memcached
+Features: 2025.1 ubuntu_noble
+Override candidate: /root/osh/openstack-helm/values_overrides/memcached/ubuntu_noble.yaml
+File not found: /root/osh/openstack-helm/values_overrides/memcached/ubuntu_noble.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/memcached/2025.1.yaml
+File not found: /root/osh/openstack-helm/values_overrides/memcached/2025.1.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/memcached/2025.1-ubuntu_noble.yaml
+File not found: /root/osh/openstack-helm/values_overrides/memcached/2025.1-ubuntu_noble.yaml
+Resulting override args:
+Release "memcached" does not exist. Installing it now.
+NAME: memcached
+LAST DEPLOYED: Thu May  7 16:31:46 2026
+NAMESPACE: openstack
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+```
+확인
+```
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get pod -n openstack -o wide
+NAME                                                   READY   STATUS      RESTARTS        AGE     IP              NODE        NOMINATED NODE   READINESS GATES
+ceph-adapter-rook-namespace-client-ceph-config-4nxsx   0/1     Completed   0               34m     10.233.102.1    control01   <none>           <none>
+ceph-adapter-rook-namespace-client-key-xpvjv           0/1     Completed   0               34m     10.233.102.2    control01   <none>           <none>
+ingress-nginx-controller-6ccbb554f8-8jr7l              1/1     Running     0               25h     10.233.112.4    gpu02       <none>           <none>
+mariadb-controller-7f55fd7c67-g249l                    1/1     Running     0               4m37s   10.233.102.8    control01   <none>           <none>
+mariadb-server-0                                       1/1     Running     1 (3m58s ago)   4m37s   10.233.102.11   control01   <none>           <none>
+mariadb-server-1                                       1/1     Running     0               4m37s   10.233.102.9    control01   <none>           <none>
+mariadb-server-2                                       1/1     Running     1 (3m58s ago)   4m37s   10.233.102.10   control01   <none>           <none>
+memcached-memcached-0                                  1/1     Running     0               68s     10.233.102.12   control01   <none>           <none>
+rabbitmq-cluster-wait-764vn                            0/1     Completed   0               11m     10.233.102.4    control01   <none>           <none>
+rabbitmq-rabbitmq-0                                    1/1     Running     0               11m     10.233.102.5    control01   <none>           <none>
+rabbitmq-rabbitmq-1                                    1/1     Running     0               11m     10.233.102.7    control01   <none>           <none>
+rabbitmq-rabbitmq-2                                    1/1     Running     0               11m     10.233.102.6    control01   <none>           <none>
+```
 
-
+2.9.4. keystone
+```
+root@control01:~/osh/openstack-helm# helm upgrade --install keystone keystone \
+    --namespace=openstack \
+        $(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c keystone ${FEATURES})
+Base URL: https://opendev.org/openstack/openstack-helm/raw/branch/master/values_overrides
+Base path: /root/osh/openstack-helm/values_overrides
+Chart: keystone
+Features: 2025.1 ubuntu_noble
+Override candidate: /root/osh/openstack-helm/values_overrides/keystone/ubuntu_noble.yaml
+File not found: /root/osh/openstack-helm/values_overrides/keystone/ubuntu_noble.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/keystone/2025.1.yaml
+File not found: /root/osh/openstack-helm/values_overrides/keystone/2025.1.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/keystone/2025.1-ubuntu_noble.yaml
+File found: /root/osh/openstack-helm/values_overrides/keystone/2025.1-ubuntu_noble.yaml
+Resulting override args: --values /root/osh/openstack-helm/values_overrides/keystone/2025.1-ubuntu_noble.yaml
+Release "keystone" does not exist. Installing it now.
+NAME: keystone
+LAST DEPLOYED: Thu May  7 16:34:05 2026
+NAMESPACE: openstack
+STATUS: deployed
+REVISION: 1
+```
+확인
+```
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get pod -n openstack -o wide
+NAME                                                   READY   STATUS      RESTARTS       AGE     IP              NODE        NOMINATED NODE   READINESS GATES
+ceph-adapter-rook-namespace-client-ceph-config-4nxsx   0/1     Completed   0              39m     10.233.102.1    control01   <none>           <none>
+ceph-adapter-rook-namespace-client-key-xpvjv           0/1     Completed   0              39m     10.233.102.2    control01   <none>           <none>
+ingress-nginx-controller-6ccbb554f8-8jr7l              1/1     Running     0              25h     10.233.112.4    gpu02       <none>           <none>
+keystone-api-6cdcdcfc8d-w45kd                          1/1     Running     0              2m53s   10.233.102.14   control01   <none>           <none>
+keystone-bootstrap-qvxkg                               0/1     Completed   0              39s     10.233.102.21   control01   <none>           <none>
+keystone-credential-setup-thq6p                        0/1     Completed   0              2m53s   10.233.102.15   control01   <none>           <none>
+keystone-db-init-l6cvh                                 0/1     Completed   0              2m22s   10.233.102.16   control01   <none>           <none>
+keystone-db-sync-f27n5                                 0/1     Completed   0              2m4s    10.233.102.18   control01   <none>           <none>
+keystone-domain-manage-qnx4n                           0/1     Completed   0              94s     10.233.102.20   control01   <none>           <none>
+keystone-fernet-setup-xp88k                            0/1     Completed   0              2m15s   10.233.102.17   control01   <none>           <none>
+keystone-rabbit-init-kjsnf                             0/1     Completed   0              108s    10.233.102.19   control01   <none>           <none>
+mariadb-controller-7f55fd7c67-g249l                    1/1     Running     0              8m44s   10.233.102.8    control01   <none>           <none>
+mariadb-server-0                                       1/1     Running     1 (8m5s ago)   8m44s   10.233.102.11   control01   <none>           <none>
+mariadb-server-1                                       1/1     Running     0              8m44s   10.233.102.9    control01   <none>           <none>
+mariadb-server-2                                       1/1     Running     1 (8m5s ago)   8m44s   10.233.102.10   control01   <none>           <none>
+memcached-memcached-0                                  1/1     Running     0              5m15s   10.233.102.12   control01   <none>           <none>
+rabbitmq-cluster-wait-764vn                            0/1     Completed   0              16m     10.233.102.4    control01   <none>           <none>
+rabbitmq-rabbitmq-0                                    1/1     Running     0              16m     10.233.102.5    control01   <none>           <none>
+rabbitmq-rabbitmq-1                                    1/1     Running     0              16m     10.233.102.7    control01   <none>           <none>
+rabbitmq-rabbitmq-2                                    1/1     Running     0              16m     10.233.102.6    control01   <none>           <none>
+```
+2.9.5. heat
+```
+root@control01:~/osh/openstack-helm# helm upgrade --install heat heat \
+    --namespace=openstack \
+        $(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c heat ${FEATURES})
+Base URL: https://opendev.org/openstack/openstack-helm/raw/branch/master/values_overrides
+Base path: /root/osh/openstack-helm/values_overrides
+Chart: heat
+Features: 2025.1 ubuntu_noble
+Override candidate: /root/osh/openstack-helm/values_overrides/heat/ubuntu_noble.yaml
+File not found: /root/osh/openstack-helm/values_overrides/heat/ubuntu_noble.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/heat/2025.1.yaml
+File not found: /root/osh/openstack-helm/values_overrides/heat/2025.1.yaml
+Override candidate: /root/osh/openstack-helm/values_overrides/heat/2025.1-ubuntu_noble.yaml
+File found: /root/osh/openstack-helm/values_overrides/heat/2025.1-ubuntu_noble.yaml
+Resulting override args: --values /root/osh/openstack-helm/values_overrides/heat/2025.1-ubuntu_noble.yaml
+Release "heat" does not exist. Installing it now.
+NAME: heat
+LAST DEPLOYED: Thu May  7 16:38:37 2026
+NAMESPACE: openstack
+STATUS: deployed
+REVISION: 1
+```
+확인
+```
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get pod -n openstack -o wide
+NAME                                                   READY   STATUS      RESTARTS      AGE     IP              NODE        NOMINATED NODE   READINESS GATES
+ceph-adapter-rook-namespace-client-ceph-config-4nxsx   0/1     Completed   0             45m     10.233.102.1    control01   <none>           <none>
+ceph-adapter-rook-namespace-client-key-xpvjv           0/1     Completed   0             45m     10.233.102.2    control01   <none>           <none>
+heat-api-fb9f7d775-nx5dt                               1/1     Running     0             4m33s   10.233.102.24   control01   <none>           <none>
+heat-bootstrap-8xjb2                                   0/1     Completed   0             2m39s   10.233.102.32   control01   <none>           <none>
+heat-cfn-5f545754f7-c97j6                              1/1     Running     0             4m33s   10.233.102.23   control01   <none>           <none>
+heat-db-init-bs69c                                     0/1     Completed   0             4m33s   10.233.102.25   control01   <none>           <none>
+heat-db-sync-nn84z                                     0/1     Completed   0             4m25s   10.233.102.26   control01   <none>           <none>
+heat-domain-ks-user-stw8m                              0/1     Completed   0             2m28s   10.233.102.33   control01   <none>           <none>
+heat-engine-75ccbc98f4-5l7lh                           1/1     Running     0             4m33s   10.233.102.22   control01   <none>           <none>
+heat-engine-cleaner-29635660-b72m5                     0/1     Completed   0             3m14s   10.233.102.31   control01   <none>           <none>
+heat-ks-endpoints-tlx8w                                0/6     Completed   0             3m41s   10.233.102.29   control01   <none>           <none>
+heat-ks-service-7nphw                                  0/2     Completed   0             3m53s   10.233.102.28   control01   <none>           <none>
+heat-ks-user-z2g2k                                     0/2     Completed   0             3m19s   10.233.102.30   control01   <none>           <none>
+heat-rabbit-init-9z47r                                 0/1     Completed   0             3m59s   10.233.102.27   control01   <none>           <none>
+heat-trusts-ngzj7                                      0/1     Completed   0             109s    10.233.102.34   control01   <none>           <none>
+ingress-nginx-controller-6ccbb554f8-8jr7l              1/1     Running     0             25h     10.233.112.4    gpu02       <none>           <none>
+keystone-api-6cdcdcfc8d-w45kd                          1/1     Running     0             9m5s    10.233.102.14   control01   <none>           <none>
+keystone-bootstrap-qvxkg                               0/1     Completed   0             6m51s   10.233.102.21   control01   <none>           <none>
+keystone-credential-setup-thq6p                        0/1     Completed   0             9m5s    10.233.102.15   control01   <none>           <none>
+keystone-db-init-l6cvh                                 0/1     Completed   0             8m34s   10.233.102.16   control01   <none>           <none>
+keystone-db-sync-f27n5                                 0/1     Completed   0             8m16s   10.233.102.18   control01   <none>           <none>
+keystone-domain-manage-qnx4n                           0/1     Completed   0             7m46s   10.233.102.20   control01   <none>           <none>
+keystone-fernet-setup-xp88k                            0/1     Completed   0             8m27s   10.233.102.17   control01   <none>           <none>
+keystone-rabbit-init-kjsnf                             0/1     Completed   0             8m      10.233.102.19   control01   <none>           <none>
+mariadb-controller-7f55fd7c67-g249l                    1/1     Running     0             14m     10.233.102.8    control01   <none>           <none>
+mariadb-server-0                                       1/1     Running     1 (14m ago)   14m     10.233.102.11   control01   <none>           <none>
+mariadb-server-1                                       1/1     Running     0             14m     10.233.102.9    control01   <none>           <none>
+mariadb-server-2                                       1/1     Running     1 (14m ago)   14m     10.233.102.10   control01   <none>           <none>
+memcached-memcached-0                                  1/1     Running     0             11m     10.233.102.12   control01   <none>           <none>
+rabbitmq-cluster-wait-764vn                            0/1     Completed   0             22m     10.233.102.4    control01   <none>           <none>
+rabbitmq-rabbitmq-0                                    1/1     Running     0             22m     10.233.102.5    control01   <none>           <none>
+rabbitmq-rabbitmq-1                                    1/1     Running     0             22m     10.233.102.7    control01   <none>           <none>
+rabbitmq-rabbitmq-2                                    1/1     Running     0             22m     10.233.102.6    control01   <none>           <none>
+```
 
