@@ -1668,7 +1668,37 @@ bash-5.1$ ceph osd lspools
 10 default.rgw.buckets.data
 ```
 
+2.8. 뭔가 했음...
+```
+kubectl taint nodes control01 node-role.kubernetes.io/control-plane-
+```
 
+```
+원래는 
+확인 방법 : helm get values ceph-adapter-rook -n openstack
+
+
+
+# fs id만 세팅하고 스크립트 실행
+helm upgrade --install ceph-adapter-rook openstack-helm/ceph-adapter-rook --namespace=openstack $(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c ceph-adapter-rook ${FEATURES})
+
+ceph-adapter-rook openstack
+==>
+helm upgrade --install ceph-adapter-rook openstack-helm/ceph-adapter-rook --namespace=openstack \
+$(helm osh get-values-overrides -p ${OVERRIDES_DIR} -c ceph-adapter-rook ${FEATURES})
+
+helm upgrade --install ceph-adapter-rook openstack-helm/ceph-adapter-rook --namespace=openstack  \
+helm osh get-values-overrides -p /root/osh/openstack-helm/values_overrides -c ceph-adapter-rook 2025.1 ubuntu_noble
+
+
+archiadmin@k8s-ops-con001-ds2:~/osh/openstack-helm/values_overrides$ vim ceph-adapter-rook/ubuntu_jammy.yaml
+conf:
+  ceph:
+    global:
+      fsid: 57503f8e-1523-42ab-994c-0db1635b52ef
+      mon_host: ["ip1:6789","ip2:6789","ip3:6789"]
+ceph_cluster_namespace: ceph
+```
 
 
 
