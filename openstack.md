@@ -1965,3 +1965,15 @@ rabbitmq-rabbitmq-1                                    1/1     Running     0    
 rabbitmq-rabbitmq-2                                    1/1     Running     0             22m     10.233.102.6    control01   <none>           <none>
 ```
 
+2.9.6. glance
+```
+root@control01:~/osh/openstack-helm/values_overrides# kubectl get pod -A | grep ceph-tools
+ceph                           rook-ceph-tools-665997cbf8-v48gx                         1/1     Running     0             5h50m
+root@control01:~/osh/openstack-helm/values_overrides# kubectl exec -it -n ceph rook-ceph-tools-665997cbf8-v48gx  -- /bin/bash
+bash-5.1$ ceph auth get-key client.admin
+AQDo8PtpzuLuBxAAlijgUoPU2b5tM4jZzWEXRg==bash-5.1$
+```
+key = "AQDo8PtpzuLuBxAAlijgUoPU2b5tM4jZzWEXRg=="
+
+```
+```
