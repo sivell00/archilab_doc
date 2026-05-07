@@ -1976,4 +1976,30 @@ AQDo8PtpzuLuBxAAlijgUoPU2b5tM4jZzWEXRg==bash-5.1$
 key = "AQDo8PtpzuLuBxAAlijgUoPU2b5tM4jZzWEXRg=="
 
 ```
+다음과 같이 수정
+
+root@control01:~/osh/openstack-helm/glance# sed -n '120,130p' values.yaml
+            failure_rate:
+              max: 0
+  ceph:
+    monitors: []
+    enabled: true
+    admin_keyring: AQDo8PtpzuLuBxAAlijgUoPU2b5tM4jZzWEXRg==
+    override:
+    append:
+  ceph_client:
+    override:
+    append:
+root@control01:~/osh/openstack-helm/glance# sed -n '270,280p' values.yaml
+      service_type: image
+    glance_store:
+      # Since 2024.1 this section must contain the only key 'default_backend'.
+      # Other keys should be defined in the corresponding per-backend sections.
+      # This is for backward compatibility.
+      default_backend: rbd
+      filesystem_store_datadir: /var/lib/glance/images
+      cinder_catalog_info: volumev3::internalURL
+      rbd_store_chunk_size: 8
+      rbd_store_replication: 3
+      rbd_store_crush_rule: replicated_rule
 ```
