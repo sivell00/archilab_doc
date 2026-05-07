@@ -1539,6 +1539,133 @@ bash-5.1$ ceph status
 
   io:
     client:   85 B/s rd, 170 B/s wr, 0 op/s rd, 0 op/s wr
+bash-5.1$ ceph osd df
+ID  CLASS  WEIGHT   REWEIGHT  SIZE     RAW USE  DATA     OMAP     META     AVAIL    %USE  VAR   PGS  STATUS
+ 0    ssd  1.74660   1.00000  1.7 TiB   27 MiB  796 KiB   25 KiB   26 MiB  1.7 TiB  0.00  1.00   17      up
+ 2    ssd  1.74660   1.00000  1.7 TiB   27 MiB  848 KiB  208 KiB   26 MiB  1.7 TiB  0.00  1.00   10      up
+ 4    ssd  1.74660   1.00000  1.7 TiB   27 MiB  824 KiB   24 KiB   26 MiB  1.7 TiB  0.00  1.00   14      up
+ 5    ssd  1.74660   1.00000  1.7 TiB   27 MiB  820 KiB   25 KiB   26 MiB  1.7 TiB  0.00  1.00   18      up
+ 6    ssd  1.74660   1.00000  1.7 TiB   27 MiB  828 KiB   27 KiB   26 MiB  1.7 TiB  0.00  1.00   18      up
+ 7    ssd  1.74660   1.00000  1.7 TiB   28 MiB  1.4 MiB   26 KiB   26 MiB  1.7 TiB  0.00  1.02   17      up
+ 1    ssd  1.74660   1.00000  1.7 TiB   27 MiB  880 KiB   30 KiB   26 MiB  1.7 TiB  0.00  1.00   19      up
+ 3    ssd  1.74660   1.00000  1.7 TiB   27 MiB  712 KiB   25 KiB   26 MiB  1.7 TiB  0.00  0.99    8      up
+                       TOTAL   14 TiB  218 MiB  7.0 MiB  395 KiB  210 MiB   14 TiB  0.00
+MIN/MAX VAR: 0.99/1.02  STDDEV: 0
+bash-5.1$ ceph auth ls
+osd.0
+        key: AQAb8vtp4znLNBAADHNCQ6d2E/xZmK4CkC9u4A==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+osd.1
+        key: AQAc8vtp2S/aEBAAOG/NF7jUb1S1LZfru70hkw==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+osd.2
+        key: AQAe8vtpCdxQBRAA9N3UwYrrkiGMD9Ru4hdd9Q==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+osd.3
+        key: AQAe8vtpX4TvIhAAJR6fll4L8/itdFp/fFZQvQ==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+osd.4
+        key: AQAg8vtpIVK/FBAAVyd2pzdeT8SIu53NDtA4TA==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+osd.5
+        key: AQAi8vtpBL3pHRAA63si/xatXu45RSYtpa94Ow==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+osd.6
+        key: AQAk8vtpEPUALhAAZUfPTlpImfwkZOexlImkpg==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+osd.7
+        key: AQAn8vtpFnToARAAqNEA4UyJhCKElby4SiidxQ==
+        caps: [mgr] allow profile osd
+        caps: [mon] allow profile osd
+        caps: [osd] allow *
+client.admin
+        key: AQDo8PtpzuLuBxAAlijgUoPU2b5tM4jZzWEXRg==
+        caps: [mds] allow *
+        caps: [mgr] allow *
+        caps: [mon] allow *
+        caps: [osd] allow *
+client.ceph-exporter
+        key: AQC88ftp5ftmMBAA7CTmQH9qYD9t2FTKy0XGQg==
+        caps: [mds] allow r
+        caps: [mgr] allow r
+        caps: [mon] allow profile ceph-exporter
+        caps: [osd] allow r
+client.crash
+        key: AQC88ftpxAheIxAAFQaPYErHhdKr9+ZR2rbz+Q==
+        caps: [mgr] allow rw
+        caps: [mon] allow profile crash
+client.csi-cephfs-node.1
+        key: AQC88ftpOnVIFRAAvQCFJQtI2iqgAD/Sql1nVA==
+        caps: [mds] allow rw
+        caps: [mgr] allow rw
+        caps: [mon] allow r
+        caps: [osd] allow rwx tag cephfs metadata=*, allow rw tag cephfs data=*
+client.csi-cephfs-provisioner.1
+        key: AQC88ftpbjhCABAA9rQ2G+iv2yD8GTQ0hXlAUg==
+        caps: [mds] allow *
+        caps: [mgr] allow rw
+        caps: [mon] allow r, allow command 'osd blocklist'
+        caps: [osd] allow rw tag cephfs metadata=*
+client.csi-rbd-node.1
+        key: AQC78ftplLyoJhAAQZQ3Qu/wRb0orl78DzF5zw==
+        caps: [mgr] allow rw
+        caps: [mon] profile rbd
+        caps: [osd] profile rbd
+client.csi-rbd-provisioner.1
+        key: AQC78ftpN5FuERAAt5KAmY5gN+mboBaWNjCswQ==
+        caps: [mgr] allow rw
+        caps: [mon] profile rbd, allow command 'osd blocklist'
+        caps: [osd] profile rbd
+client.rbd-mirror-peer
+        key: AQC98ftpBqxINRAAVp7GPp+ltrr/++fEpTCoUw==
+        caps: [mon] profile rbd-mirror-peer
+        caps: [osd] profile rbd
+client.rgw.default.a
+        key: AQBW8vtpnfigAxAAM1Yo97+9mRpio8d56KsLjg==
+        caps: [mon] allow rw
+        caps: [osd] allow rwx
+mgr.a
+        key: AQC/8ftpG/WYABAA86GROwP55H8/Us2Has6Rig==
+        caps: [mds] allow *
+        caps: [mon] allow profile mgr
+        caps: [osd] allow *
+mgr.b
+        key: AQC/8ftp3/T0DBAAi3UR+OVJ3gQthGzC2QzdAw==
+        caps: [mds] allow *
+        caps: [mon] allow profile mgr
+        caps: [osd] allow *
+mgr.c
+        key: AQC/8ftpoSdRGRAAljmmbdN/e0dYyQgHZExrbw==
+        caps: [mds] allow *
+        caps: [mon] allow profile mgr
+        caps: [osd] allow *
+bash-5.1$ ceph health
+HEALTH_OK
+bash-5.1$ ceph osd lspools
+1 .mgr
+2 default.rgw.control
+3 rbd
+4 default.rgw.meta
+5 default.rgw.log
+6 default.rgw.buckets.index
+7 default.rgw.buckets.non-ec
+8 default.rgw.otp
+9 .rgw.root
+10 default.rgw.buckets.data
 ```
 
 
