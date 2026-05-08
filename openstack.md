@@ -368,6 +368,7 @@ Deleting outdated charts
 
 ## 2.2. Ingress 설치
 ```
+root@control01:~/osh/openstack-helm# kubectl create namespace openstack
 root@control01:~/osh/openstack-helm# helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 "ingress-nginx" has been added to your repositories
 root@control01:~/osh/openstack-helm# helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
