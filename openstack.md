@@ -436,6 +436,8 @@ If TLS is enabled for the Ingress, a Secret containing the certificate and key m
 
 ## 2.3. metallb 설치
 ```
+root@control01:~/osh/openstack-helm# kubectl create namespace metallb-system
+namespace/metallb-system created
 root@control01:~/osh/openstack-helm# helm repo add metallb https://metallb.github.io/metallb
 "metallb" has been added to your repositories
 root@control01:~/osh/openstack-helm# helm upgrade --install metallb metallb/metallb\
