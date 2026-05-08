@@ -471,7 +471,21 @@ on how to use the CRs.
 ```
 
 ### 2.3.1. ip address pool 설정
+192.168.11.xxx에 metal lb가 되어있다.
 ```
+root@control01:~/osh/openstack-helm# kubectl get pod -n metallb-system -o wide
+NAME                                  READY   STATUS    RESTARTS   AGE   IP               NODE        NOMINATED NODE   READINESS GATES
+metallb-controller-676f677b6b-2nknm   1/1     Running   0          11m   10.233.126.5     cpu02       <none>           <none>
+metallb-speaker-2z8bf                 4/4     Running   0          11m   192.168.11.102   control02   <none>           <none>
+metallb-speaker-9tz5b                 4/4     Running   0          11m   192.168.11.103   control03   <none>           <none>
+metallb-speaker-gtfzm                 4/4     Running   0          11m   192.168.11.108   gpu02       <none>           <none>
+metallb-speaker-mbwq8                 4/4     Running   0          11m   192.168.11.107   gpu01       <none>           <none>
+metallb-speaker-n4cfv                 4/4     Running   0          11m   192.168.11.106   cpu03       <none>           <none>
+metallb-speaker-nltrz                 4/4     Running   0          11m   192.168.11.104   cpu01       <none>           <none>
+metallb-speaker-smkqt                 4/4     Running   0          11m   192.168.11.105   cpu02       <none>           <none>
+metallb-speaker-vqqsh                 4/4     Running   0          11m   192.168.11.101   control01   <none>           <none>
+
+
 root@control01:~/osh/openstack-helm# tee > /tmp/metallb_ipaddresspool.yaml <<EOF
 ---
 apiVersion: metallb.io/v1beta1
@@ -481,7 +495,7 @@ metadata:
     namespace: metallb-system
 spec:
     addresses:
-    - "192.168.10.109/32"
+    - "192.168.11.109/32"
 EOF
 
 root@control01:~/osh/openstack-helm# kubectl apply -f /tmp/metallb_ipaddresspool.yaml
