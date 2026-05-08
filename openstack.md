@@ -85,6 +85,8 @@ sshpass -p "password" ssh-copy-id -o StrictHostKeyChecking=no sds@ip_7_1
 
 ## 1.6. 컨피그 파일 적용, 설치 확인
 ```
+# image download가 실패해서 cn의 mirror를 사용하도록 한다.
+export KKZONE=cn
 kk create cluster -f ops-config.yaml
 kubectl logs -n kubesphere-system $(kubectl get pod -n kubesphere-system -l 'app in (ks-install, ks-installer)' -o jsonpath='{.items[0].metadata.name}') -f
 ```
