@@ -557,7 +557,7 @@ metadata:
   name: public-openstack
   namespace: openstack
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.10.109"
+    metallb.universe.tf/loadBalancerIPs: "192.168.11.109"
 spec:
   externalTrafficPolicy: Cluster
   type: LoadBalancer
