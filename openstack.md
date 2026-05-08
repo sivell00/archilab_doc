@@ -433,7 +433,20 @@ If TLS is enabled for the Ingress, a Secret containing the certificate and key m
     tls.key: <base64 encoded key>
   type: kubernetes.io/tls
 ```
-
+## 2.3. master node에도 pod 구동 설정
+```
+root@control01:~/osh/openstack-helm# kubectl describe node control01 | grep Taints
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+root@control01:~/osh/openstack-helm# kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
+node/control01 untainted
+taint "node-role.kubernetes.io/control-plane:NoSchedule" not found
+taint "node-role.kubernetes.io/control-plane:NoSchedule" not found
+taint "node-role.kubernetes.io/control-plane:NoSchedule" not found
+taint "node-role.kubernetes.io/control-plane:NoSchedule" not found
+taint "node-role.kubernetes.io/control-plane:NoSchedule" not found
+taint "node-role.kubernetes.io/control-plane:NoSchedule" not found
+taint "node-role.kubernetes.io/control-plane:NoSchedule" not found
+```
 ## 2.3. metallb 설치
 ```
 root@control01:~/osh/openstack-helm# kubectl create namespace metallb-system
